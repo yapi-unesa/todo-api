@@ -172,6 +172,84 @@ def complete_all():
         'data': todos
     }), 200
 
+# ========== GET STATISTICS ==========
+@app.route('/todos/stats', methods=['GET'])
+def get_stats():
+    """Get statistics about todos"""
+    total = len(todos)
+    completed = len([t for t in todos if t['completed']])
+    active = total - completed
+    
+    # Calculate completion rate
+    completion_rate = (completed / total * 100) if total > 0 else 0
+    
+    return jsonify({
+        'success': True,
+        'stats': {
+            'total': total,
+            'completed': completed,
+            'active': active,
+            'completion_rate': f'{completion_rate:.1f}%'
+        }
+    }), 200
+
+# ========== SEARCH TODOS ==========
+@app.route('/todos/search', methods=['GET'])
+def search_todos():
+    """
+    Search todos by title
+    Usage: /todos/search?q=keyword
+    """
+    # Ambil query parameter dari URL
+    query = request.args.get('q', '').lower()
+    
+    if not query:
+        return jsonify({
+            'success': False,
+            'error': 'Query parameter "q" is required'
+        }), 400
+    
+    # Filter todos yang title-nya mengandung query
+    results = [
+        t for t in todos 
+        if query in t['title'].lower() or query in t.get('description', '').lower()
+    ]
+    
+    return jsonify({
+        'success': True,
+        'query': query,
+        'count': len(results),
+        'results': results
+    }), 200
+
+# ========== FILTER BY STATUS ==========
+@app.route('/todos/filter', methods=['GET'])
+def filter_todos():
+    """
+    Filter todos by completion status
+    Usage: /todos/filter?status=completed
+           /todos/filter?status=active
+    """
+    status = request.args.get('status', 'all').lower()
+    
+    if status == 'completed':
+        filtered = [t for t in todos if t['completed']]
+    elif status == 'active':
+        filtered = [t for t in todos if not t['completed']]
+    elif status == 'all':
+        filtered = todos
+    else:
+        return jsonify({
+            'success': False,
+            'error': 'Invalid status. Use: completed, active, or all'
+        }), 400
+    
+    return jsonify({
+        'success': True,
+        'status': status,
+        'count': len(filtered),
+        'data': filtered
+    }), 200
 
 # ========== RUN SERVER ==========
 if __name__ == '__main__':
@@ -198,3 +276,7 @@ if __name__ == '__main__':
 # ├── .gitignore         (file - ada titik di depan!)
 # ├── app.py             (file - icon Python)
 # ├── README.md          (file - icon Markdown)
+
+
+
+
